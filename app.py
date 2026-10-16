@@ -96,24 +96,37 @@ def validate_context_url():
 
 
 
-def get_api(path, page=None):
-    params = {"path": path}
-    if page is not None:
-        params["page"] = page
 
-    response = requests.get(
-        CONTEXT_URL,
-        params=params,
-        timeout=30
-    )
+from urllib.parse import urlsplit, parse_qsl, urlencode, urlunsplit
+
+def get_api(path, page=None):
+    parts = urlsplit(CONTEXT_URL)
+
+    # Preserve the signed parameters but replace path/page.
+    params = dict(parse_qsl(parts.query, keep_blank_values=True))
+    params["path"] = path
+
+    if page is not None:
+        params["page"] = str(page)
+    else:
+        params.pop("page", None)
+
+    url = urlunsplit((
+        parts.scheme,
+        parts.netloc,
+        parts.path,
+        urlencode(params),
+        parts.fragment
+    ))
+
+    response = requests.get(url, timeout=20)
 
     logging.info(
-        "UPSTREAM DEBUG path=%s page=%s status=%s content_type=%s body=%s",
+        "UPSTREAM path=%s page=%s status=%s body=%s",
         path,
         page,
         response.status_code,
-        response.headers.get("Content-Type"),
-        response.text[:1500]
+        response.text[:500]
     )
 
     response.raise_for_status()
