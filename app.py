@@ -95,15 +95,30 @@ def validate_context_url():
         raise RuntimeError("LEDGER_CONTEXT_URL is not the assigned questionData URL")
 
 
-def get_api(path, page=None, timeout=15):
-    """Call the assigned questionData proxy, preserving its signed parameters."""
+
+def get_api(path, page=None):
     params = {"path": path}
     if page is not None:
         params["page"] = page
 
-    response = http.get(CONTEXT_URL, params=params, timeout=timeout)
+    response = requests.get(
+        CONTEXT_URL,
+        params=params,
+        timeout=30
+    )
+
+    logging.info(
+        "UPSTREAM DEBUG path=%s page=%s status=%s content_type=%s body=%s",
+        path,
+        page,
+        response.status_code,
+        response.headers.get("Content-Type"),
+        response.text[:1500]
+    )
+
     response.raise_for_status()
     return response.json()
+
 
 
 def records_from_response(value):
